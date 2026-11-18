@@ -58,6 +58,14 @@ export interface TtsInputChunkOptions {
   minimumWords?: number
   /** @default 12 */
   maximumWords?: number
+  /**
+   * FORK (l1msn, custom-build): when false, sentence-ending punctuation never ends a chunk — only specials,
+   * explicit flush and the end of the stream do. The fork speaks a whole reply in one TTS request because
+   * Qwen3-TTS renders a different timbre on every call (QwenLM/Qwen3-TTS#343).
+   *
+   * @default true
+   */
+  endAtSentence?: boolean
   stripNarrative?: boolean
   keepNarrativeText?: boolean
 }
@@ -76,6 +84,7 @@ export async function* chunkTtsInput(
     boost = 2,
     minimumWords = 4,
     maximumWords = 12,
+    endAtSentence = true,
   } = options ?? {}
 
   const iterator = readGraphemeClusters(
@@ -193,13 +202,13 @@ export async function* chunkTtsInput(
       }
       // A boost chunk ends early at soft punctuation only once it is long enough to be worth its
       // own TTS request. A shorter opening clause stays in the chunk and joins the next one.
-      else if (flush || hard || (chunkWordsCount > maximumWords && canEndAtLimit(value, chunk, chunkWordsCount, maximumWords)) || (yieldCount < boost && chunkWordsCount >= minimumWords)) {
+      else if (flush || (endAtSentence && hard) || (chunkWordsCount > maximumWords && canEndAtLimit(value, chunk, chunkWordsCount, maximumWords)) || (yieldCount < boost && chunkWordsCount >= minimumWords)) {
         const text = chunk.trim()
         if (regexpSound.test(text)) {
           yield {
             text,
             words: chunkWordsCount,
-            reason: flush ? 'flush' : hard ? 'hard' : chunkWordsCount > maximumWords ? 'limit' : 'boost',
+            reason: flush ? 'flush' : endAtSentence && hard ? 'hard' : chunkWordsCount > maximumWords ? 'limit' : 'boost',
           }
           yieldCount++
         }
