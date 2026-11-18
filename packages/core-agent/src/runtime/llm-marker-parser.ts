@@ -89,8 +89,10 @@ function createLlmMarkerParser(options?: MarkerParserOptions) {
 
       while (buffer.length > 0) {
         if (!inTag) {
-          const openTagIndex = buffer.indexOf(TAG_OPEN)
-          if (openTagIndex < 0) {
+          // Lenient opener: streamed models sometimes emit `< |ACT ...|>`
+          // (a space between `<` and `|`); normalize it to the canonical `<|`.
+          const openMatch = /<\s*\|/.exec(buffer)
+          if (!openMatch) {
             if (buffer.length - tailLength >= minLiteralEmitLength) {
               const emit = buffer.slice(0, -tailLength)
               buffer = buffer.slice(-tailLength)
@@ -99,11 +101,12 @@ function createLlmMarkerParser(options?: MarkerParserOptions) {
             break
           }
 
+          const openTagIndex = openMatch.index
           if (openTagIndex > 0) {
             const emit = buffer.slice(0, openTagIndex)
-            buffer = buffer.slice(openTagIndex)
             await onLiteral(emit)
           }
+          buffer = TAG_OPEN + buffer.slice(openTagIndex + openMatch[0].length)
           inTag = true
         }
         else {
