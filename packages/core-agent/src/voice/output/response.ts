@@ -182,7 +182,10 @@ export class SpeechStream {
           // A provider rejects when its signal aborts. A stop or an interruption is a cancellation, not a failure.
           const aborted = signal.aborted || this.signal.aborted || response.signal.aborted
           response.emit(aborted ? { type: 'tts-result', segmentId, status: 'cancelled' } : { type: 'tts-result', segmentId, status: 'failed', error })
-          this.fail(error)
+          // Fork (custom-build), upstream moeru-ai/airi#3540: one segment's synthesis failure must not kill the
+          // whole reply. The failed segment is skipped (null) and the stream continues; only a real abort settles it.
+          if (aborted)
+            this.fail(error)
           return null
         }
       },
