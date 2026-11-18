@@ -3,7 +3,7 @@ import type { Outcome } from '@proj-airi/stream-kit'
 
 import type { TurnRef } from '../turn'
 
-import { createSpeechPipeline } from '@proj-airi/pipelines-audio'
+import { createSpeechPipeline, createTtsSegmentStream } from '@proj-airi/pipelines-audio'
 import { createPushStream } from '@proj-airi/stream-kit'
 import { nanoid } from 'nanoid/non-secure'
 
@@ -124,7 +124,8 @@ export class SpeechStream {
 
   private timer: ReturnType<typeof setTimeout> | undefined
   /** Holds the text after the last safe end of the streamed markdown. A control marker holds the place of a control. */
-  private readonly segmenter = new MarkdownSegmenter()
+  // Fork (l1msn, custom-build): single-segment — the whole reply is one TTS call (see speech-transformation/segmenter.ts).
+  private readonly segmenter = new MarkdownSegmenter('single-segment')
   /** Controls whose markers are still in the segmenter, in order. */
   private readonly controls: SpeechControl[] = []
   /** The spoken text of the last segment, for the language of a formula that starts the next one. */
@@ -171,6 +172,8 @@ export class SpeechStream {
     const pending = new Set<PlaybackItem<Blob>>()
 
     const pipeline = createSpeechPipeline<Blob>({
+      // Fork (l1msn, custom-build): one TTS request per reply — the chunker ends chunks only at specials and close.
+      segmenter: (tokens, meta) => createTtsSegmentStream(tokens, meta, { boost: 0, minimumWords: Number.MAX_SAFE_INTEGER, maximumWords: Number.MAX_SAFE_INTEGER, endAtSentence: false }),
       tts: async (request, signal) => {
         const { segmentId } = request
         response.emit({ type: 'tts-request', segmentId, text: request.text, reason: request.reason })

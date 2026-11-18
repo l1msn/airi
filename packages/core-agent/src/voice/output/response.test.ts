@@ -195,7 +195,8 @@ describe('voiceController output', () => {
     speech.end()
 
     expect(await response.finish()).toBe('finished')
-    expect(requested).toEqual(['Hel', 'lo there.', 'See docs.'])
+    // Fork (l1msn, custom-build): single-segment joins the reply into fewer requests; both markers still arrive in order.
+    expect(requested).toEqual(['Hel', 'lo there.See docs.'])
     expect(specials).toEqual(['<|ACT happy|>', '<|ACT code|>'])
     await controller.close()
   })
@@ -216,7 +217,8 @@ describe('voiceController output', () => {
     speech.end()
 
     expect(await response.finish()).toBe('finished')
-    expect(requested).toEqual(['结果是 当n趋于无穷大时 n分之1的极限 等于 0。', 'x 属于 A'])
+    // Fork (l1msn, custom-build): endAtSentence:false joins the sentences into one spoken request.
+    expect(requested).toEqual(['结果是 当n趋于无穷大时 n分之1的极限 等于 0。x 属于 A'])
     await controller.close()
   })
 
@@ -230,14 +232,15 @@ describe('voiceController output', () => {
     const response = controller.openResponse({ sessionId: 'alice', turnId: 'stream' })
     const speech = response.openSpeech({ purpose: 'answer' })
     speech.write('The answer is ready. The area is $x^')
-    await vi.waitFor(() => expect(requested).toEqual(['The answer is ready.']))
+    // Fork (l1msn, custom-build): single-segment mode buffers the whole reply, so nothing is synthesized mid-stream.
+    await vi.waitFor(() => expect(requested).toEqual([]))
 
     // The formula is still open, so its source does not reach TTS.
     speech.write('2$. Done')
     speech.end()
 
     expect(await response.finish()).toBe('finished')
-    expect(requested).toEqual(['The answer is ready.', 'The area is x squared.', 'Done'])
+    expect(requested).toEqual(['The answer is ready. The area is x squared. Done'])
     await controller.close()
   })
 

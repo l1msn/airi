@@ -53,9 +53,18 @@ function isOpen(state: ScanState): boolean {
 export class MarkdownSegmenter {
   private buffer = ''
 
+  /**
+   * FORK (l1msn, custom-build): `single-segment` buffers the whole reply and emits it as one segment on end().
+   * Qwen3-TTS renders a different timbre on every synthesis call (QwenLM/Qwen3-TTS#343), so the default
+   * sentence-per-call pipeline makes one reply sound like several voices. The fork speaks each reply in one call.
+   */
+  constructor(private readonly mode: 'sentences' | 'single-segment' = 'sentences') {}
+
   /** Adds streamed text. Returns the segments that ended. */
   push(text: string): string[] {
     this.buffer += text
+    if (this.mode === 'single-segment')
+      return []
     const end = this.safeEnd(false)
     return end > 0 ? [this.take(end)] : []
   }
@@ -65,6 +74,8 @@ export class MarkdownSegmenter {
    * in the middle then, which is what a flush asks for.
    */
   flush(): string[] {
+    if (this.mode === 'single-segment')
+      return []
     const end = this.safeEnd(true)
     return end > 0 ? [this.take(end)] : []
   }
