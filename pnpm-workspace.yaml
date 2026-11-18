@@ -36,6 +36,12 @@ minimumReleaseAgeExclude:
   - injeca
 
 shellEmulator: true
+supportedArchitectures:
+  cpu:
+    - x64
+  os:
+    - linux
+    - win32
 packages:
   - packages/**
   - plugins/**
