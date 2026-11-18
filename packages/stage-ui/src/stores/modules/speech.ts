@@ -23,6 +23,14 @@ import { streamSpeech } from '../../libs/speech/streaming-pipeline'
 import { useProviderConfigStore } from '../providers/config'
 import { useProviderStore } from '../providers/provider'
 
+/**
+ * Fork (custom-build): Leila's pinned speech. When the OpenAI-compatible Qwen3-TTS provider on Halogen is used,
+ * every synthesis speaks as `serena` with fixed sampling (seed 1, temperature 0), so the timbre never drifts.
+ * Change or empty this to move the fork to another voice.
+ */
+const FORK_SPEECH_PIN_PROVIDER = 'openai-audio-speech'
+const FORK_SPEECH_PIN: Record<string, unknown> = { voice: 'serena', seed: 1, temperature: 0 }
+
 export function toSignedPercent(value: number): string {
   if (value > 0)
     return `+${value}%`
@@ -675,6 +683,7 @@ export const useSpeechStore = defineStore('speech', () => {
       ...provider.speech(model, requestProviderConfig),
       input,
       voice,
+      ...(activeSpeechProvider.value === FORK_SPEECH_PIN_PROVIDER ? FORK_SPEECH_PIN : {}),
       abortSignal: signal,
     })
 
@@ -733,7 +742,7 @@ export const useSpeechStore = defineStore('speech', () => {
       const settings = providerId === OFFICIAL_SPEECH_PROVIDER_ID
         ? { ...config, extraBody: { ...(config.extraBody as Record<string, unknown> | undefined), airi_analytics: { trigger: 'auto', source: 'chat_auto_tts', voice_type: voiceType, turn_id: turn.turnId } } }
         : config
-      const audio = await generateSpeech({ ...client.speech(model, settings), input, voice: voiceId, abortSignal: signal })
+      const audio = await generateSpeech({ ...client.speech(model, settings), input, voice: voiceId, ...(providerId === FORK_SPEECH_PIN_PROVIDER ? FORK_SPEECH_PIN : {}), abortSignal: signal })
       signal.throwIfAborted()
       return new Blob([audio])
     } }
