@@ -50,6 +50,29 @@ describe('useLlmmarkerParser', () => {
 
   /**
    * @example
+   * A space between `<` and `|` (model drift, e.g. `< |ACT ...|>`) is normalized to the canonical marker.
+   */
+  it('normalizes spaced openers like `< |ACT ...|>`', async () => {
+    const collectedLiterals: string[] = []
+    const collectedSpecials: string[] = []
+    const parser = useLlmmarkerParser({
+      onLiteral: (literal) => {
+        collectedLiterals.push(literal)
+      },
+      onSpecial: (special) => {
+        collectedSpecials.push(special)
+      },
+    })
+
+    await parser.consume('Привет < |ACT {"emotion":"curious"}|> мир')
+    await parser.end()
+
+    expect(collectedLiterals.join('')).toBe('Привет  мир')
+    expect(collectedSpecials).toEqual(['<|ACT {"emotion":"curious"}|>'])
+  })
+
+  /**
+   * @example
    * Unfinished markers are withheld instead of leaking into literal text.
    */
   it('does not include unfinished special markers', async () => {
