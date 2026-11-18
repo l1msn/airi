@@ -28,8 +28,12 @@ import { useProviderStore } from '../providers/provider'
  * every synthesis speaks as `serena` with fixed sampling (seed 1, temperature 0), so the timbre never drifts.
  * Change or empty this to move the fork to another voice.
  */
-const FORK_SPEECH_PIN_PROVIDER = 'openai-audio-speech'
+const FORK_SPEECH_PIN_PROVIDERS = ['openai-audio-speech', 'openai-compatible-audio-speech']
 const FORK_SPEECH_PIN: Record<string, unknown> = { voice: 'serena', seed: 1, temperature: 0 }
+
+function forkSpeechPinFor(providerId?: string): Record<string, unknown> {
+  return providerId && FORK_SPEECH_PIN_PROVIDERS.includes(providerId) ? FORK_SPEECH_PIN : {}
+}
 
 export function toSignedPercent(value: number): string {
   if (value > 0)
@@ -683,7 +687,7 @@ export const useSpeechStore = defineStore('speech', () => {
       ...provider.speech(model, requestProviderConfig),
       input,
       voice,
-      ...(activeSpeechProvider.value === FORK_SPEECH_PIN_PROVIDER ? FORK_SPEECH_PIN : {}),
+      ...forkSpeechPinFor(activeSpeechProvider.value),
       abortSignal: signal,
     })
 
@@ -742,7 +746,7 @@ export const useSpeechStore = defineStore('speech', () => {
       const settings = providerId === OFFICIAL_SPEECH_PROVIDER_ID
         ? { ...config, extraBody: { ...(config.extraBody as Record<string, unknown> | undefined), airi_analytics: { trigger: 'auto', source: 'chat_auto_tts', voice_type: voiceType, turn_id: turn.turnId } } }
         : config
-      const audio = await generateSpeech({ ...client.speech(model, settings), input, voice: voiceId, ...(providerId === FORK_SPEECH_PIN_PROVIDER ? FORK_SPEECH_PIN : {}), abortSignal: signal })
+      const audio = await generateSpeech({ ...client.speech(model, settings), input, voice: voiceId, ...forkSpeechPinFor(providerId), abortSignal: signal })
       signal.throwIfAborted()
       return new Blob([audio])
     } }
