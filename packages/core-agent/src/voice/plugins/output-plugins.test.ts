@@ -73,7 +73,11 @@ describe('voice output plugins', () => {
     await response.finish()
 
     await expect.poll(() => closed.mock.calls.length).toBe(1)
-    expect(events).toEqual(['tts-request', 'tts-result', 'playback-start', 'playback-end', 'token-special'])
+    // Fork (l1msn, custom-build): single-segment speech (b3a69dbc7) emits the control marker together with
+    // the segment it belongs to, so the marker reaches listeners before the single TTS request of that
+    // segment. Upstream's sentence chunker emitted it after the audio of the sentence (upstream expected
+    // ['tts-request','tts-result','playback-start','playback-end','token-special']).
+    expect(events).toEqual(['token-special', 'tts-request', 'tts-result', 'playback-start', 'playback-end'])
     await controller.close()
   })
 
