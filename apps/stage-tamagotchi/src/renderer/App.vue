@@ -72,6 +72,7 @@ import { initializeIOTraceHubBridge } from './bridges/io-trace-hub'
 import { initializeStageThreeRuntimeTraceBridge } from './bridges/stage-three-runtime-trace'
 import { useDevicePermissions } from './composables/use-device-permissions'
 import { useLanguage } from './composables/use-language'
+import { useSpokenUtterance } from './composables/use-spoken-utterance'
 import { useFullscreenStore } from './stores/fullscreen'
 import { useServerChannelSettingsStore } from './stores/settings/server-channel'
 import { useStageWindowLifecycleStore } from './stores/stage-window-lifecycle'
@@ -92,6 +93,8 @@ const context = useElectronEventaContext()
 // Each window registers the same list. The stage window decides onboarding at startup, and the
 // onboarding and settings windows show the permissions.
 useDevicePermissionsStore().register(useDevicePermissions())
+// Fork (FUT-AIRISAYAPP): says the strings the main process receives from outside this window.
+useSpokenUtterance()
 const listModelAssets = useElectronEventaInvoke(electronModelAssetsList)
 const ensureModelAsset = useElectronEventaInvoke(electronModelAssetEnsure)
 const cancelModelAsset = useElectronEventaInvoke(electronModelAssetCancel)
