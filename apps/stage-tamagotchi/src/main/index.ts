@@ -50,6 +50,7 @@ import { setupServerChannel } from './services/airi/channel-server'
 import { setupComputerUse } from './services/airi/computer-use'
 import { PendingActionManager } from './services/airi/computer-use/action-manager'
 import { setupChatRequests } from './services/airi/computer-use/requests'
+import { setupExternalSpeechServer } from './services/airi/external-speech'
 import { setupGodotStageManager } from './services/airi/godot-stage'
 import { setupHomeAssistant } from './services/airi/home-assistant'
 import { setupBuiltInServer } from './services/airi/http-server'
@@ -614,6 +615,7 @@ app.whenReady().then(async () => {
     callback: async (deps) => {
       const { context } = createContext(ipcMain)
       setupHomeAssistant(context)
+      setupExternalSpeechServer({ getMainWindow: () => userFacingMainWindow })
       await setupArtistryBridge({
         widgetsManager: deps.widgetsWindow,
         context,
