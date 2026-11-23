@@ -177,7 +177,12 @@ export const useTamagotchiMcpToolsStore = defineStore('tamagotchi-mcp-tools', ()
       servers: status?.servers.filter(server => server.state === 'running').map(server => server.name),
       direct: catalog,
       proxyServers,
-      proxy: proxyServers.length ? 'explicit' : 'none',
+      // NOTICE(fork/custom-build-v8): upstream marks router tools
+      // `requiresExplicitSelection` whenever any proxy server exists, so an
+      // external router-only server (mcp.json) is never reachable from a normal
+      // chat. Fork builds expose the router by default instead.
+      // Removal condition: upstream lets external servers be active by default.
+      proxy: proxyServers.length ? 'active' : 'none',
     })
 
     if (generation !== refreshGeneration)
