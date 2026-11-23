@@ -134,6 +134,14 @@ const desktopAvailable = computed(() => {
   return toolIds.some(id => matchesMcpToolId(id, 'computer_observe'))
     && toolIds.some(id => matchesMcpToolId(id, 'computer_act'))
 })
+
+// NOTICE(fork/custom-build-v8): the composer grants a static tool list, so tools
+// registered by external MCP servers (prefix `mcp:`) never reach the model.
+// Fork builds grant every registered MCP tool on each send.
+// Removal condition: upstream ships a per-chat MCP tool picker on desktop.
+const mcpToolReferences = computed(() => tools.tools
+  .filter(tool => tool.id.startsWith('mcp:'))
+  .map(tool => ({ name: tool.function.name })))
 function parseGrantMode(value: unknown): ApprovalGrantMode {
   return value === 'full' || value === 'auto' || value === 'ask' ? value : 'ask'
 }
@@ -216,7 +224,7 @@ const composer = useChatComposer<ChatImageAttachment>({
       data: attachment.data,
       mimeType: attachment.mimeType,
     })),
-    tools: artistryToolReferences,
+    tools: [...artistryToolReferences, ...mcpToolReferences.value],
   }),
 })
 const {
