@@ -422,6 +422,7 @@ export * from './plugin/assets'
 export * from './plugin/capabilities'
 export * from './plugin/host'
 export * from './plugin/tools'
+export * from './speech'
 export * from './window-backdrop'
 
 export interface DesktopOverlayReadiness {
