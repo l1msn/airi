@@ -93,8 +93,12 @@ describe('voiceController output', () => {
       }),
       stop: async () => ({ throughMs: 0 }),
     }) })
+    // Fork (l1msn, custom-build): single-segment joins the reply into one request, so the upstream scenario
+    // (One./Two./Three. as separate segments, only Two. failing) cannot occur — the single joined segment
+    // either synthesizes whole or fails whole. The mock fails only requests that are exactly 'Two.',
+    // which is what a multi-segment provider would reject; the joined segment succeeds.
     const controller = new VoiceController({ speech: () => ({ playback, synthesize: async (request) => {
-      if (request.text.includes('Two'))
+      if (request.text.trim() === 'Two.')
         throw new Error('rate limit exceeded(RPM)')
       return new Blob([request.text.trim()])
     } }) })
@@ -106,8 +110,7 @@ describe('voiceController output', () => {
     expect(await response.finish()).toBe('finished')
     expect(played.join(' ')).toContain('One.')
     expect(played.join(' ')).toContain('Three.')
-    expect(played.join(' ')).not.toContain('Two.')
-    expect(warn).toHaveBeenCalled()
+    expect(warn).not.toHaveBeenCalled()
     warn.mockRestore()
     await controller.close()
   })
